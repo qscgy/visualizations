@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <link rel="stylesheet" type="text/css" href="https://er.ncsbe.gov/sboe.css" />
+    <link rel="stylesheet" href="https://er.ncsbe.gov/meanmenu.min.css" media="all" />
+    <title>NC SBE Election Contest Details</title>
+</head>
+<body>
+    <div id="menu">
+        <header>
+            <nav>
+                <table style="width:100%;">
+                    <tr>
+                        <td>
+                            <a href="https://www.ncsbe.gov/" id="logo"></a>
+                            <ul id="main_menu"></ul>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                        </td>
+                    </tr>
+                </table>
+            </nav>
+        </header>
+    </div>
+    <div class="links">
+        <div id="divTextSize" style="display: none;">
+            <span style="font-weight: bold;">Text Size: </span>
+            <a href='#' onclick="resizeFont(-1);return false;" style="font-size: 100%;">A</a>
+            <a href='#' onclick="resizeFont(1);return false;" style="font-size: 150%;">A</a>
+        </div>
+        <br id="brTextSize" style="clear: both;" />
+    </div>
+    <h2 style="text-align: center; margin: 0px; padding-right: 0em;">
+        <span ID="lblHeader"></span>
+    </h2>
+    <br />
+    <div id="divtabs" style="display: none; padding: 0px 5px 0px 5px; ">
+        <span ID="lblContest" style="font-weight: bold;"></span>
+        <br />
+        <span ID="lblCountyReporting"></span>
+        <br />
+        <span ID="lblPrecinctReporting"></span>
+        <br />
+        <br />
+
+        <a href="#" onclick="changeTab(1); return false;" style="text-decoration: none;">
+            <div id="tab1" class="tab"><span ID="lblTab1"></span></div>
+        </a>
+        <a href="#" onclick="changeTab(2); return false;" style="text-decoration: none;">
+            <div id="tab2" class="tab"><span ID="lblTab2"></span></div>
+        </a>
+        <a href="#" onclick="changeTab(3); return false;" style="text-decoration: none;">
+            <div id="tab3" class="tab"><span ID="lblTab3"></span></div>
+        </a>
+        <div style="clear: left;"></div>
+        <div class="tabdiv" id="tab1div">
+            <div id="gvResults" style="width: 40%; float: left;"></div>
+            <div style="width: 60%; float: right;">
+                <div id="map" class="tooltip">
+                    <span id="tooltip-span" style="display: none; min-width: 350px;"></span>
+                    <svg id="svg" style="overflow: hidden;"></svg>
+                </div>
+                <br />
+                <div style="text-align: center;">
+                    <span id="lblArea"></span>
+                    <select id="cboArea" onchange="showpopup();"></select>
+                </div>
+                <div id="modalResults">
+                    <div class="modalBackground" onclick="hideModal('modalResults');"></div>
+                    <div class="modalContainer">
+                        <div id="modaltable" class="modal" style="width: 950px;">
+                            <div class="modalTop">
+                                <span class="close" onclick="hideModal('modalResults'); return false;">X</span>
+                            </div>
+                            <div class="modalBody" id="modalBody">
+
+                            </div>
+                            <div class="modalBottom">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <br style="clear:both;" />
+        </div>
+        <div class="tabdiv" id="tab2div"></div>
+        <div class="tabdiv" id="tab3div" style="text-align: center;"></div>
+    </div>
+    <br />
+</body>
+</html>
+
+<script>
+    var fontsize = ['70%', '90%', '110%', '120%'],
+        fontindex = 1;
+
+    function getCookie(cname) {
+        var name = cname + '=';
+        var ca = document.cookie.split(';');
+
+        for (var i = 0; i < ca.length; i++) {
+            var c = ca[i].trim();
+            if (c.indexOf(name) == 0) return c.substring(name.length, c.length);
+        }
+
+        return '';
+    }
+
+    var fontcookie = getCookie('fontsize');
+
+    if (fontcookie != '') {
+        fontindex = fontsize.indexOf(fontcookie);
+    }
+
+    document.write('<link rel="stylesheet" href="https://er.ncsbe.gov/fontsize' + String(fontindex) + '.css" type="text/css" />');
+</script>
+
+<script src="https://code.jquery.com/jquery-1.9.1.js"></script>
+<script src="https://er.ncsbe.gov/jquery.meanmenu.min.js"></script>
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-159880906-1"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+
+    gtag('config', 'UA-159880906-1');
+</script>
+
+<script type="text/javascript">
+    var $bxslider = jQuery.noConflict(),
+        $menu = jQuery.noConflict(),
+        width = 0,
+        height = 0,
+        fontsize = ['70%', '90%', '110%', '120%'],
+        barheight = ['20px', '22px', '24px', '26px'],
+        pctoffset = ['-17px', '-20px', '-23px', '-25px'],
+        fontindex = 1;
+
+    var datapath = '',
+        mappath = '',
+        electiondt = '',
+        countyid = '',
+        office = '',
+        contest = '',
+        countyrpt = '',
+        countytotal = '',
+        fileElection = new XMLHttpRequest(),
+        fileCounty = new XMLHttpRequest(),
+        fileOffice = new XMLHttpRequest(),
+        fileContest = new XMLHttpRequest(),
+        fileResults = new XMLHttpRequest(),
+        filePrecinct = new XMLHttpRequest(),
+        fileMap = new XMLHttpRequest(),
+        arrElection,
+        arrCounty,
+        arrOffice,
+        arrContest,
+        arrResults,
+        arrPrecinct,
+        arrMap,
+        colorTie = '6E3A96',
+        colorNotReported = 'A6A5A5',
+        colorNotParticipating = 'FFFFFF';
+
+    var timeDayHourMinute = String(new Date().getDate()) + '-' + String(new Date().getHours()) + '-' + String(new Date().getMinutes()),
+        timeHour = String(new Date().getHours()),
+        timeDate = String(new Date().getDate());
+    
+
+    $menu(document).ready(function () {
+        $menu('header nav').meanmenu();
+    });
+
+    window.onload = function () {
+        console.log(timeDayHourMinute);
+        electiondt = "11/08/2022";
+        contest = "1363"     
+        countyid = '1'
+
+        datapath = 'https://er.ncsbe.gov/enr/' + getDateFolder(new Date(electiondt)) + '/data/';
+        mappath = 'https://er.ncsbe.gov/enr/' + getDateFolder(new Date(electiondt)) + '/maps/';
+
+        fileElection.open('get', 'https://er.ncsbe.gov/enr/' + 'elections.txt?v=' + timeDayHourMinute, false);
+        fileElection.send(null);
+
+        fileCounty.open('get', datapath + 'county.txt?v=' + timeDayHourMinute, false);
+        fileCounty.send(null);
+
+        fileOffice.open('get', datapath + 'office.txt', false);
+        fileOffice.send(null);
+
+        fileContest.open('get', datapath + 'contest.txt?v=' + timeDayHourMinute, false);
+        fileContest.send(null);
+
+        fileResults.open('get', datapath + 'results_' + countyid + '.txt?v=' + timeDayHourMinute, false);
+        fileResults.send(null);
+
+        fileMap.open('get', mappath + 'map_' + countyid + '.txt', false);
+        fileMap.send(null);
+        
+        if (fileElection.responseText.length > 2 && fileElection.status != '404') { arrElection = JSON.parse(fileElection.responseText).filter(function (el) { return (el.edt == electiondt); }); }
+        if (fileCounty.responseText.length > 2 && fileCounty.status != '404') { arrCounty = JSON.parse(fileCounty.responseText).filter(function (el) { return (el.cid == countyid); }); }
+        if (fileOffice.responseText.length > 2 && fileOffice.status != '404') { arrOffice = JSON.parse(fileOffice.responseText).filter(function (el) { return ((countyid > 0 && el.cty == '1') || (countyid == 0 && el.sta == '1')) }); }
+        if (fileContest.responseText.length > 2 && fileContest.status != '404') { arrContest = JSON.parse(fileContest.responseText).filter(function (el) { return (el.cid == countyid && el.lci == contest); }); }
+        if (fileResults.responseText.length > 2 && fileResults.status != '404') { arrResults = JSON.parse(fileResults.responseText).filter(function (el) { return (el.lid == contest); }); }
+        if (filePrecinct.responseText.length > 2 && filePrecinct.status != '404') { arrPrecinct = JSON.parse(filePrecinct.responseText).filter(function (el) { return (el.lid == contest); }); }
+        if (fileMap.responseText.length > 2 && fileMap.status != '404') { arrMap = JSON.parse(fileMap.responseText); }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        all_pct = {};
+        var precincts;
+
+        for(var i=1; i<101; i++){
+            filePrecinct.open('get', datapath + 'precinct_' + i.toString() + '.txt?v=' + timeDayHourMinute, false);
+            filePrecinct.send(null);
+
+            if (filePrecinct.responseText.length > 2 && filePrecinct.status != '404') { precincts = JSON.parse(filePrecinct.responseText).filter(function (el) { return (el.lid == contest); }); }
+            if (fileMap.responseText.length > 2 && fileMap.status != '404') { arrMap = JSON.parse(fileMap.responseText); }
+            // console.log(precincts);
+            
+            // For each precinct in the list, combine all the candidates
+
+            pct_rows = {
+                "lid": [],
+                "aid": [],
+                "anm": [],
+                "sta": "Final Canvass Results (official)",
+                "pcc": "7030A0",
+                "cnc": "EB2326",
+                "bnm": "Matthew Hoh",
+                "vct": "21",
+                "pct": "0.77%",
+                "evc": "12",
+                "ovc": "8",
+                "avc": "1",
+                "pvc": "0"
+            }
+            // for (var j=0; j<precincts.length; j++){
+
+            // }
+            
+            all_pct[i.toString()] = precincts;
+            sleep(100);
+        }
+        
+        console.log(all_pct);
+
+    }
+
+    window.onresize = function () {
+        resizeMap();
+    }
+
+    function resizeFont(inc) {
+        fontindex += inc;
+        if (fontindex < 0) { fontindex = 0; }
+        if (fontindex > fontsize.length - 1) { fontindex = fontsize.length - 1; }
+
+        document.body.style.fontSize = fontsize[fontindex];
+        document.cookie = 'fontsize=' + fontsize[fontindex];
+    }
+
+    function getCookie(cname) {
+        var name = cname + '=';
+        var ca = document.cookie.split(';');
+
+        for (var i = 0; i < ca.length; i++) {
+            var c = ca[i].trim();
+            if (c.indexOf(name) == 0) return c.substring(name.length, c.length);
+        }
+
+        return '';
+    }
+
+    function resizeMap() {
+        var pageArea = document.getElementById('map');
+
+        if (pageArea != null) {
+            var mapArea = document.getElementById('svg');
+            var widthToHeight = 2;
+            var newWidth = pageArea.clientWidth - 10;
+            var newHeight = pageArea.clientWidth - 10;
+            var newWidthToHeight = newWidth / newHeight;
+
+            if (newWidthToHeight > widthToHeight) {
+                newWidth = newHeight * widthToHeight;
+                mapArea.style.height = newHeight + 'px';
+                mapArea.style.width = newWidth + 'px';
+            } else {
+                newHeight = newWidth / widthToHeight;
+                mapArea.style.width = newWidth + 'px';
+                mapArea.style.height = newHeight + 'px';
+            }
+        }
+    }
+
+    function hovertext(mousepos, text) {
+        var tooltipSpan = document.getElementById('tooltip-span'),
+            xoffset = 10,
+            yoffset = 20,
+            TopTotal = 0;
+
+        if (text == '') {
+            tooltipSpan.style.display = 'none';
+        }
+        else {
+            tooltipSpan.style.display = 'block';
+
+            var x = mousepos.clientX,
+                y = mousepos.clientY;
+
+            if (x > window.innerWidth - tooltipSpan.clientWidth) {
+                xoffset = tooltipSpan.clientWidth * -1 - 20;
+            }
+            else {
+                xoffset = 20;
+            }
+
+            if (y > window.innerHeight - tooltipSpan.clientHeight) {
+                yoffset = tooltipSpan.clientHeight * -1;
+            }
+            else {
+                yoffset = 20;
+            }
+
+            //don't allow the Popup to go higher than the screen itself.
+            if ((y + yoffset) > 0) {
+                TopTotal = (y + yoffset)
+            }
+
+            tooltipSpan.style.top = TopTotal + 'px';
+            tooltipSpan.style.left = (x + xoffset) + 'px';
+            tooltipSpan.innerHTML = text;
+        }
+    }
+
+    function changeTab(index) {
+        var tab1 = document.getElementById('tab1'),
+            tab2 = document.getElementById('tab2'),
+            tab3 = document.getElementById('tab3')
+
+        switch (index) {
+            case 1:
+                tab1.className = 'tabselected';
+                tab2.className = 'tab';
+                tab3.className = 'tab';
+
+                tab1div.style.display = 'inherit';
+                tab2div.style.display = 'none';
+                tab3div.style.display = 'none';
+                break;
+            case 2:
+                tab1.className = 'tab';
+                tab2.className = 'tabselected';
+                tab3.className = 'tab';
+
+                tab1div.style.display = 'none';
+                tab2div.style.display = 'inherit';
+                tab3div.style.display = 'none';
+                break;
+            case 3:
+                tab1.className = 'tab';
+                tab2.className = 'tab';
+                tab3.className = 'tabselected';
+
+                tab1div.style.display = 'none';
+                tab2div.style.display = 'none';
+                tab3div.style.display = 'inherit';
+                break;
+        }
+    }
+
+    function showmap(precinct) {
+        var svg = document.getElementById('svg'),
+            lastArea = '',
+            test = '';
+
+        if (arrMap != undefined && precinct != undefined) {
+            svg.setAttribute('viewBox', arrCounty.filter(function (el) { return el.cid == countyid; })[0].vwp);
+
+            for (var i = 0; i < arrMap.length; i++) {
+                temp = precinct.filter(function (el) { return el.aid == arrMap[i].id });
+
+                path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.id = arrMap[i].id;
+                if (temp.length > 0) {
+                    path.style.fill = '#' + temp[0].cnc;
+                }
+                else {
+                    path.style.fill = '#ffffff'
+                }
+                path.style.fillRule = 'evenodd';
+                path.onclick = function () { showpopup(this.id); };
+                path.onmousemove = function (evt) { hovertext(evt, createhovertext(this.id)) };
+                path.onmouseout = function (evt) { hovertext(evt, '') };
+                path.setAttributeNS(null, 'd', arrMap[i].path);
+                svg.appendChild(path);
+            }
+        }
+    }
+
+    function createhovertext(id) {
+        var precinct = arrPrecinct.filter(function (el) { return (el.aid == id); }),
+            output = '';
+
+        hovertext(null, '');
+
+        if (precinct.length > 0) {
+            output = '<b>Contest Summary for ' + precinct[0].anm + '</b><br />'
+
+            if (countyid == 0) {
+                output = output + formatNumber(precinct[0].prt) + ' of ' + formatNumber(precinct[0].ptl) + ' Precincts Reporting'
+                output = output + '<br />';
+            }
+
+            if (id != '-1' && id != '') {
+                var tbl = document.createElement('table');
+
+                var tr = document.createElement('tr');
+                tbl.appendChild(tr);
+
+                var th = document.createElement('th');
+                th.className = 'tooltip-table-header'
+                th.style.textAlign = 'left';
+                th.innerHTML = 'Choice';
+                tr.appendChild(th);
+
+                var th = document.createElement('th');
+                th.className = 'tooltip-table-header'
+                th.style.textAlign = 'right';
+                th.innerHTML = 'Total Votes';
+                tr.appendChild(th);
+
+                var th = document.createElement('th');
+                th.className = 'tooltip-table-header'
+                th.style.textAlign = 'right';
+                th.innerHTML = 'Percent';
+                tr.appendChild(th);
+
+                for (var i = 0; i < precinct.length; i++) {
+                    var tr = document.createElement('tr');
+                    tbl.appendChild(tr);
+
+                    var td = document.createElement('td');
+                    td.className = 'tooltip-table-header';
+                    td.innerHTML = precinct[i].bnm;
+                    tr.appendChild(td);
+
+                    var td = document.createElement('td');
+                    td.className = 'tooltip-table-cells';
+                    td.innerHTML = formatNumber(precinct[i].vct);
+                    tr.appendChild(td);
+
+                    var td = document.createElement('td');
+                    td.className = 'tooltip-table-cells';
+                    td.innerHTML = precinct[i].pct;
+                    tr.appendChild(td);
+                }
+
+                output = output + tbl.outerHTML;
+            }
+        }
+
+        return output;
+    }
+
+    function showpopup(id) {
+        var p = document.getElementById('cboArea');
+
+        if (id == undefined) {
+            id = p.options[p.selectedIndex].value;
+        }
+
+        var el = document.getElementById('modalBody'),
+            precinct = arrPrecinct.filter(function (el) { return (el.aid == id); }),
+            name = '';
+
+        document.getElementById('modaltable').style.width = (arrElection[0].vtm == '1' ? '950px' : '500px')
+
+        if (precinct.length > 0) {
+            name = precinct[0].anm;
+
+            hovertext(null, '');
+
+            el.innerHTML = '<b>Results by Voting Method for ' + name + '</b><br />'
+
+            if (countyid == 0) {
+                el.innerHTML = el.innerHTML + formatNumber(precinct[0].prt) + ' of ' + formatNumber(precinct[0].ptl) + ' Precincts Reporting'
+                el.innerHTML = el.innerHTML + '<br />';
+            }
+
+            if (id != '-1' && id != '') {
+                var tbl = document.createElement('table');
+                tbl.width = '100%';
+
+                var tr = document.createElement('tr');
+                tbl.appendChild(tr);
+
+                var th = document.createElement('th');
+                th.className = 'popup-table-header'
+                th.style.textAlign = 'left';
+                th.innerHTML = 'Choice';
+                tr.appendChild(th);
+
+                var th = document.createElement('th');
+                th.className = 'popup-table-header'
+                th.style.textAlign = 'right';
+                th.innerHTML = 'Total Votes';
+                tr.appendChild(th);
+
+                var th = document.createElement('th');
+                th.className = 'popup-table-header'
+                th.style.textAlign = 'right';
+                th.innerHTML = 'Percent';
+                tr.appendChild(th);
+
+                if (arrElection[0].vtm == '1') {
+                    var th = document.createElement('th');
+                    th.className = 'popup-table-header'
+                    th.style.textAlign = 'right';
+                    th.innerHTML = 'Election Day';
+                    tr.appendChild(th);
+
+                    var th = document.createElement('th');
+                    th.className = 'popup-table-header'
+                    th.style.textAlign = 'right';
+                    th.innerHTML = 'Absentee One-Stop';
+                    tr.appendChild(th);
+
+                    var th = document.createElement('th');
+                    th.className = 'popup-table-header'
+                    th.style.textAlign = 'right';
+                    th.innerHTML = 'Absentee By-Mail';
+                    tr.appendChild(th);
+
+                    var th = document.createElement('th');
+                    th.className = 'popup-table-header'
+                    th.style.textAlign = 'right';
+                    th.innerHTML = 'Provisional';
+                    tr.appendChild(th);
+                }
+
+                for (var i = 0; i < precinct.length; i++) {
+                    var tr = document.createElement('tr');
+                    tbl.appendChild(tr);
+
+                    var td = document.createElement('td');
+                    td.className = 'popup-table-header';
+                    td.style.width = (arrElection[0].vtm == '1' ? '22%' : '');
+                    td.innerHTML = precinct[i].bnm;
+                    tr.appendChild(td);
+
+                    var td = document.createElement('td');
+                    td.className = 'popup-table-cells';
+                    td.innerHTML = formatNumber(precinct[i].vct);
+                    tr.appendChild(td);
+
+                    var td = document.createElement('td');
+                    td.className = 'popup-table-cells';
+                    td.innerHTML = precinct[i].pct;
+                    tr.appendChild(td);
+
+                    if (arrElection[0].vtm == '1') {
+                        var td = document.createElement('td');
+                        td.className = 'popup-table-cells';
+                        td.innerHTML = formatNumber(precinct[i].evc);
+                        tr.appendChild(td);
+
+                        var td = document.createElement('td');
+                        td.className = 'popup-table-cells';
+                        td.innerHTML = formatNumber(precinct[i].ovc);
+                        tr.appendChild(td);
+
+                        var td = document.createElement('td');
+                        td.className = 'popup-table-cells';
+                        td.innerHTML = formatNumber(precinct[i].avc);
+                        tr.appendChild(td);
+
+                        var td = document.createElement('td');
+                        td.className = 'popup-table-cells';
+                        td.innerHTML = formatNumber(precinct[i].pvc);
+                        tr.appendChild(td);
+                    }
+                }
+
+                el.appendChild(tbl);
+
+                showModal('modalResults');
+            }
+        }
+
+        return false;
+    }
+
+    function loadCounty(county, results) {
+        if (county != undefined && results != undefined) {
+            document.getElementById('lblHeader').innerHTML = county.filter(function (el) { return el.cid == countyid; })[0].tle;
+            document.getElementById('lblContest').innerHTML = arrResults[0].cnm;
+            document.getElementById('lblCountyReporting').innerHTML = (countyid == 0 ? countyrpt + ' of ' + countytotal + ' Counties Completely Reported' : '');
+            document.getElementById('lblPrecinctReporting').innerHTML = formatNumber(results.filter(function (el) { return el.cid == countyid && el.lid == contest; })[0].prt) + ' of ' + formatNumber(results.filter(function (el) { return el.cid == countyid && el.lid == contest; })[0].ptl) + ' Precincts Reporting';
+        }
+    }
+
+    function loadOffice(office) {
+        var lastOffice = '',
+            menu = document.getElementById('main_menu');
+
+        menu.innerHTML = '';
+
+        if (office != undefined) {
+            for (var i = 0; i < office.length; i++) {
+                if (lastOffice != office[i].cty) {
+                    menuitem = document.createElement('li');
+                    link = document.createElement('a');
+                    link.href = './index.html' + '?election_dt=' + electiondt + '&county_id=' + countyid + '&office=' + office[i].lbl + '&contest=0';
+                    link.innerHTML = office[i].cnd;
+                    menuitem.appendChild(link);
+                    if (menu.childNodes.length > 0) {
+                        menuitem.className = 'border-left';
+                    }
+                    menu.appendChild(menuitem);
+
+                    lastOffice = office[i].des;
+                }
+            }
+        }
+    }
+
+    function loadTab1(results, precinct) {
+        var el = document.getElementById('gvResults'),
+            lastArea = '',
+            cboArea = document.getElementById('cboArea'),
+            votefor = results[0].vfr;
+
+        if (results != undefined && precinct != undefined) {
+            document.getElementById('lblTab1').innerHTML = 'Contest Details';
+
+            var tbl = document.createElement('table');
+            tbl.width = '100%';
+
+            var tr = document.createElement('tr');
+            tbl.appendChild(tr);
+
+            var th = document.createElement('th');
+            th.className = 'popup-table-header'
+            th.style.textAlign = 'left';
+            th.innerHTML = 'CHOICE';
+            tr.appendChild(th);
+
+            var th = document.createElement('th');
+            th.className = 'popup-table-header'
+            th.style.textAlign = 'right';
+            th.innerHTML = 'TOTAL';
+            tr.appendChild(th);
+
+            if (votefor == 1) {
+                var th = document.createElement('th');
+                th.className = 'popup-table-header'
+                th.innerHTML = '';
+                tr.appendChild(th);
+            }
+
+            for (var i = 0; i < results.length; i++) {
+                var tr = document.createElement('tr');
+                tbl.appendChild(tr);
+
+                var td = document.createElement('td');
+                td.className = 'popup-table-header';
+                td.style.width = (votefor == 1 ? '60%' : '80%');
+                td.innerHTML = results[i].bnm;
+                tr.appendChild(td);
+
+                var td = document.createElement('td');
+                td.className = 'popup-table-cells';
+                td.innerHTML = formatNumber(results[i].vct);
+                tr.appendChild(td);
+
+                if (votefor == 1) {
+                    var td = document.createElement('td');
+                    td.className = 'popup-table-cells';
+                    td.innerHTML = '<div class="divcircle" style="background-color: #' + results[i].col + ';"></div>';
+                    tr.appendChild(td);
+                }
+            }
+
+            //add constant rows
+
+            if (votefor == 1) {
+                var tr = document.createElement('tr');
+                tbl.appendChild(tr);
+
+                var td = document.createElement('td');
+                td.className = 'popup-table-header';
+                td.style.width = '60%';
+                td.innerHTML = 'Tie';
+                tr.appendChild(td);
+
+                var td = document.createElement('td');
+                td.className = 'popup-table-cells';
+                tr.appendChild(td);
+
+                var td = document.createElement('td');
+                td.className = 'popup-table-cells';
+                td.innerHTML = '<div class="divcircle" style="background-color: #' + colorTie + ';"></div>';
+                tr.appendChild(td);
+
+                var tr = document.createElement('tr');
+                tbl.appendChild(tr);
+
+                var td = document.createElement('td');
+                td.className = 'popup-table-header';
+                td.style.width = '60%';
+                td.innerHTML = 'Not Reported';
+                tr.appendChild(td);
+
+                var td = document.createElement('td');
+                td.className = 'popup-table-cells';
+                tr.appendChild(td);
+
+                var td = document.createElement('td');
+                td.className = 'popup-table-cells';
+                td.innerHTML = '<div class="divcircle" style="background-color: #' + colorNotReported + ';"></div>';
+                tr.appendChild(td);
+
+                var tr = document.createElement('tr');
+                tbl.appendChild(tr);
+
+                var td = document.createElement('td');
+                td.className = 'popup-table-header';
+                td.style.width = '60%';
+                td.innerHTML = 'Not Participating';
+                tr.appendChild(td);
+
+                var td = document.createElement('td');
+                td.className = 'popup-table-cells';
+                tr.appendChild(td);
+
+                var td = document.createElement('td');
+                td.className = 'popup-table-cells';
+                td.innerHTML = '<div class="divcircle" style="background-color: #' + colorNotParticipating + ';"></div>';
+                tr.appendChild(td);
+            }
+
+            el.appendChild(tbl);
+
+            showmap(precinct);
+
+            document.getElementById('lblArea').innerHTML = (countyid == 0 ? 'County: ' : 'Precinct: ');
+
+            cboArea.innerHTML = '';
+
+            opt = document.createElement('option');
+            opt.text = (countyid == 0 ? '<Select a County>' : '<Select a Precinct>');
+            cboArea.appendChild(opt);
+
+            for (var i = 1; i < precinct.length; i++) {
+                if (lastArea != precinct[i].anm) {
+                    opt = document.createElement('option');
+                    opt.text = precinct[i].anm;
+                    opt.value = precinct[i].aid;
+                    cboArea.appendChild(opt);
+                    lastArea = precinct[i].anm;
+                }
+            }
+
+            cboArea.selectedIndex = 0;
+        }
+    }
+
+    function loadTab2(results) {
+        if (results != undefined) {
+            document.getElementById('lblTab2').innerHTML = 'Results by Voting Method';
+
+            var el = document.getElementById('tab2div');
+
+            el.innerHTML = '<br />';
+
+            var tbl = document.createElement('table');
+            tbl.style.marginLeft = 'auto';
+            tbl.style.marginRight = 'auto';
+
+            var tr = document.createElement('tr');
+            tbl.appendChild(tr);
+
+            var th = document.createElement('th');
+            th.className = 'popup-table-header'
+            th.style.textAlign = 'left';
+            th.innerHTML = 'Choice';
+            tr.appendChild(th);
+
+            var th = document.createElement('th');
+            th.className = 'popup-table-header'
+            th.style.textAlign = 'right';
+            th.innerHTML = 'Total Votes';
+            tr.appendChild(th);
+
+            var th = document.createElement('th');
+            th.className = 'popup-table-header'
+            th.style.textAlign = 'right';
+            th.innerHTML = 'Percent';
+            tr.appendChild(th);
+
+            var th = document.createElement('th');
+            th.className = 'popup-table-header'
+            th.style.textAlign = 'right';
+            th.innerHTML = 'Election Day';
+            tr.appendChild(th);
+
+            var th = document.createElement('th');
+            th.className = 'popup-table-header'
+            th.style.textAlign = 'right';
+            th.innerHTML = 'Absentee One-Stop';
+            tr.appendChild(th);
+
+            var th = document.createElement('th');
+            th.className = 'popup-table-header'
+            th.style.textAlign = 'right';
+            th.innerHTML = 'Absentee By-Mail';
+            tr.appendChild(th);
+
+            var th = document.createElement('th');
+            th.className = 'popup-table-header'
+            th.style.textAlign = 'right';
+            th.innerHTML = 'Provisional';
+            tr.appendChild(th);
+
+            for (var i = 0; i < results.length; i++) {
+                var tr = document.createElement('tr');
+                tbl.appendChild(tr);
+
+                var td = document.createElement('td');
+                td.className = 'popup-table-header';
+                td.style.width = '22%';
+                td.innerHTML = results[i].bnm.replace(results[i].dtx, '').trim();
+                tr.appendChild(td);
+
+                var td = document.createElement('td');
+                td.className = 'popup-table-cells';
+                td.innerHTML = formatNumber(results[i].vct);
+                tr.appendChild(td);
+
+                var td = document.createElement('td');
+                td.className = 'popup-table-cells';
+                td.innerHTML = (Number(results[i].pct) * 100).toFixed(2) + '%';
+                tr.appendChild(td);
+
+                var td = document.createElement('td');
+                td.className = 'popup-table-cells';
+                td.innerHTML = formatNumber(results[i].evc);
+                tr.appendChild(td);
+
+                var td = document.createElement('td');
+                td.className = 'popup-table-cells';
+                td.innerHTML = formatNumber(results[i].ovc);
+                tr.appendChild(td);
+
+                var td = document.createElement('td');
+                td.className = 'popup-table-cells';
+                td.innerHTML = formatNumber(results[i].avc);
+                tr.appendChild(td);
+
+                var td = document.createElement('td');
+                td.className = 'popup-table-cells';
+                td.innerHTML = formatNumber(results[i].pvc);
+                tr.appendChild(td);
+            }
+
+            el.appendChild(tbl);
+
+            el.innerHTML = el.innerHTML + '<br />';
+        }
+    }
+
+    function loadTab3(results, precinct) {
+        if (results != undefined && precinct != undefined) {
+            document.getElementById('lblTab3').innerHTML = (countyid == 0 ? 'Results by County' : 'Results by Precinct');
+
+            var el = document.getElementById('tab3div'),
+                lastarea = '',
+                namecolstart = 2;
+
+            el.innerHTML = '<br />';
+
+            var tbl = document.createElement('table');
+            tbl.style.marginLeft = 'auto';
+            tbl.style.marginRight = 'auto';
+
+            var tr = document.createElement('tr');
+            tbl.appendChild(tr);
+
+            var th = document.createElement('th');
+            th.className = 'popup-table-header'
+            th.style.textAlign = 'left';
+            th.innerHTML = (countyid == 0 ? 'County' : 'Precinct');
+            tr.appendChild(th);
+
+            var th = document.createElement('th');
+            th.className = 'popup-table-header'
+            th.style.textAlign = 'left';
+            th.innerHTML = 'Reporting Status';
+            tr.appendChild(th);
+
+            for (i = 0; i < results.length; i++) {
+                var th = document.createElement('th');
+                th.className = 'popup-table-header'
+                th.innerHTML = results[i].bnm.replace(results[i].dtx, '').trim();
+                tr.appendChild(th);
+            }
+
+            for (i = 0; i < precinct.length; i++) {
+                if (lastarea != precinct[i].aid) {
+                    lastarea = precinct[i].aid;
+
+                    var tr = document.createElement('tr');
+                    tbl.appendChild(tr);
+
+                    var td = document.createElement('td');
+                    td.className = 'popup-table-header';
+                    td.style.textAlign = 'left';
+                    td.innerHTML = precinct[i].anm;
+                    tr.appendChild(td);
+
+                    var td = document.createElement('td');
+                    td.className = 'popup-table-cells-left';
+                    td.innerHTML = precinct[i].sta;
+                    tr.appendChild(td);
+
+                    for (c = namecolstart; c < tbl.rows[0].cells.length; c++) {
+                        var celldata = precinct.filter(function (el) { return (el.aid == lastarea && el.bnm.toLowerCase() == tbl.rows[0].cells[c].textContent.toLowerCase()); });
+
+                        var td = document.createElement('td');
+                        td.className = 'popup-table-cells';
+
+                        if (celldata.length > 0) {
+                            td.innerHTML = formatNumber(celldata[0].vct);
+                        }
+                        else {
+                            td.innerHTML = '0';
+                        }
+
+                        tr.appendChild(td);
+                    }
+                }
+            }
+
+            el.appendChild(tbl);
+
+            el.innerHTML = el.innerHTML + '<br />';
+        }
+    }
+
+    function showModal(divID) {
+        var width = document.documentElement ? document.documentElement.clientWidth : 0;
+        var height = document.documentElement ? document.documentElement.clientHeight : 0;
+        var mTop, mLeft;
+
+        document.getElementById(divID).style.visibility = 'visible';
+
+        window.onscroll = function () {
+            document.getElementById(divID).style.top = document.body.scrollTop;
+        };
+        document.getElementById(divID).style.top = document.body.scrollTop;
+
+        if (width > 0 && height > 0) {
+            mTop = parseInt((height - document.querySelectorAll('.modalContainer')[0].clientHeight) / 2);
+            mLeft = parseInt((width - document.querySelectorAll('.modalContainer')[0].clientWidth) / 2);
+            //Don't allow the the popup to start higher than the top of the visible screen
+            if (mTop <= 0) {
+                mTop = 0
+            }
+
+            document.querySelectorAll('.modalContainer')[0].style.top = String(mTop) + 'px';
+            document.querySelectorAll('.modalContainer')[0].style.left = String(mLeft) + 'px';
+        }
+    }
+
+    function hideModal(divID) {
+        var width = document.documentElement ? document.documentElement.clientWidth : 0;
+
+        document.getElementById(divID).style.visibility = 'hidden';
+        document.getElementById('modalBody').innerHTML = '';
+    }
+
+    function getParameterByName(name) {
+        name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+        var regex = new RegExp('[\\?&]' + name + '=([^&#]*)'),
+            results = regex.exec(location.search);
+        return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+    }
+
+    function getDateFolder(d) {
+        return String(d.getFullYear()) + ('0' + String(d.getMonth() + 1)).slice(-2) + ('0' + String(d.getDate())).slice(-2)
+    }
+
+    function formatNumber(n) {
+        return n.replace(/./g, function (c, i, a) {
+            return i > 0 && c !== '.' && (a.length - i) % 3 === 0 ? ',' + c : c;
+        });
+    }
+</script>
