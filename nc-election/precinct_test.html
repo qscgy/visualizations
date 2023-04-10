@@ -219,34 +219,12 @@
         all_pct = {};
         var precincts;
 
-        for(var i=1; i<101; i++){
+        for(var i=0; i<1; i++){
             filePrecinct.open('get', datapath + 'precinct_' + i.toString() + '.txt?v=' + timeDayHourMinute, false);
             filePrecinct.send(null);
 
             if (filePrecinct.responseText.length > 2 && filePrecinct.status != '404') { precincts = JSON.parse(filePrecinct.responseText).filter(function (el) { return (el.lid == contest); }); }
             if (fileMap.responseText.length > 2 && fileMap.status != '404') { arrMap = JSON.parse(fileMap.responseText); }
-            // console.log(precincts);
-            
-            // For each precinct in the list, combine all the candidates
-
-            pct_rows = {
-                "lid": [],
-                "aid": [],
-                "anm": [],
-                "sta": "Final Canvass Results (official)",
-                "pcc": "7030A0",
-                "cnc": "EB2326",
-                "bnm": "Matthew Hoh",
-                "vct": "21",
-                "pct": "0.77%",
-                "evc": "12",
-                "ovc": "8",
-                "avc": "1",
-                "pvc": "0"
-            }
-            // for (var j=0; j<precincts.length; j++){
-
-            // }
             
             all_pct[i.toString()] = precincts;
             sleep(100);
