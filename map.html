@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v6.js"></script>
+
+<!-- Create an element where the map will take place -->
+<svg id="my_dataviz" width="400" height="300"></svg>
+<script>
+
+    // The svg
+    const svg = d3.select("svg"),
+      width = +svg.attr("width"),
+      height = +svg.attr("height");
+    
+    // Map and projection
+    const projection = d3.geoMercator()
+      .scale(70)
+      .center([0,20])
+      .translate([width / 2, height / 2]);
+    const pathGenerator = d3.geoPath(projection);
+    
+    // Data and color scale
+    let data = new Map()
+    const colorScale = d3.scaleThreshold()
+      .domain([100000, 1000000, 10000000, 30000000, 100000000, 500000000])
+      .range(d3.schemeBlues[7]);
+    
+    d3.json("https://unpkg.com/us-atlas@3.0.0/states-10m.json").then(function(us){
+        console.log(us);
+    
+      svg.append("g")
+        .selectAll("path")
+        /*
+        .data(topo.objects.stesat)
+        .join("path")
+          // draw each country
+        */
+          .attr("d", d3.geoPath()
+            .projection(projection)
+          )
+          // set the color of each country
+          .attr("fill", "#000000")
+    })
+    
+    </script>
